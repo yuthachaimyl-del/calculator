@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-title" content="คิดเลข">
+<title>เครื่องคิดเลข</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:#000;color:#fff;overflow:hidden;
+  font-family:-apple-system,"SF Pro Display","SF Pro Text","Helvetica Neue",Helvetica,Arial,sans-serif;
+  -webkit-user-select:none;user-select:none;touch-action:manipulation}
+#app{height:100vh;height:100dvh;max-width:440px;margin:0 auto;display:flex;flex-direction:column;
+  padding:calc(10px + env(safe-area-inset-top)) 2.6% calc(3.5% + env(safe-area-inset-bottom));}
+button{font:inherit;color:inherit;border:0;cursor:pointer;outline:0}
+
+/* scientific keys */
+#sci{display:grid;grid-template-columns:repeat(6,1fr);gap:16px 1.7%;margin:0 -1% 8px;flex:none}
+#sci.hide{display:none}
+#sci button{background:#333;border-radius:999px;aspect-ratio:176/137;font-size:clamp(14px,4.6vw,20px);
+  display:flex;align-items:center;justify-content:center;transition:background .12s}
+#sci button:active{background:#5c5c5c}
+#sci button.on{background:#d4d4d2;color:#000}
+#sci sub,#sci sup{font-size:.6em}
+#sci sub{transform:translateY(.35em)} #sci sup{transform:translateY(-.5em)}
+.rt{display:inline-flex;align-items:flex-start}
+.rt i{font-style:normal;font-size:.55em;margin-right:-.15em;transform:translateY(-.1em)}
+
+/* history */
+#hist{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;text-align:right;
+  padding:0 1.2%;scrollbar-width:none}
+#hist::-webkit-scrollbar{display:none}
+#hist.hide{visibility:hidden}
+#hist .sp{flex:1}
+#hist .day{color:#f08a06;font-weight:600;font-size:clamp(22px,7.2vw,31px);line-height:1.45;flex:none}
+#hist .ln{font-weight:600;font-size:clamp(22px,7.2vw,31px);line-height:1.45;color:#8e8e93;white-space:nowrap;
+  flex:none;overflow:hidden;text-overflow:ellipsis;direction:rtl}
+#hist .ln span{direction:ltr;unicode-bidi:isolate;display:inline-block}
+#hist .ln b{color:#e9e9e9;font-weight:600}
+
+/* display */
+#dispWrap{flex:none;height:clamp(100px,17vh,150px);display:flex;align-items:flex-end;justify-content:flex-end;
+  position:relative;padding:0 1.6% 8px;overflow:hidden}
+#disp{font-weight:300;white-space:nowrap;line-height:1.05;letter-spacing:-.02em;font-size:96px}
+#mode{position:absolute;left:8px;bottom:14px;font-size:15px;color:#8e8e93}
+
+/* main keys */
+#keys{display:grid;grid-template-columns:repeat(5,1fr);gap:2.2% 2%;flex:none;aspect-ratio:5/4.98}
+#keys button{border-radius:999px;display:flex;align-items:center;justify-content:center;
+  font-size:clamp(30px,11vw,48px);transition:background .15s;min-width:0;min-height:0}
+#keys .d{background:#fff;color:#000}
+#keys .d:active{background:#bdbdbd}
+#keys .f{background:#333;font-size:clamp(26px,9vw,40px)}
+#keys .f:active{background:#636363}
+#keys .o{background:#ee8a04;font-size:clamp(34px,12.5vw,54px);font-weight:300}
+#keys .o:active{background:#f8c58a}
+#keys .ic svg{width:42%;height:42%}
+#keys .ic.gray{color:#8e8e93}
+#k0{grid-column:1/3}
+#keq{grid-column:5;grid-row:4/6}
+#keys .o svg{width:46%;height:auto;aspect-ratio:1}
+#keq svg{width:46%}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="sci">
+    <button data-s="2nd">2<sup>nd</sup></button>
+    <button data-fn="sin" data-fn2="asin"><span data-l="sin" data-l2="sin⁻¹">sin</span></button>
+    <button data-fn="cos" data-fn2="acos"><span data-l="cos" data-l2="cos⁻¹">cos</span></button>
+    <button data-fn="tan" data-fn2="atan"><span data-l="tan" data-l2="tan⁻¹">tan</span></button>
+    <button data-op="logy">log<sub>y</sub></button>
+    <button data-fn="log2" data-fn2="pow2"><span data-l="log&lt;sub&gt;2&lt;/sub&gt;" data-l2="2&lt;sup&gt;x&lt;/sup&gt;">log<sub>2</sub></span></button>
+
+    <button data-s="rad" id="radBtn">Rad</button>
+    <button data-fn="sinh" data-fn2="asinh"><span data-l="sinh" data-l2="sinh⁻¹">sinh</span></button>
+    <button data-fn="cosh" data-fn2="acosh"><span data-l="cosh" data-l2="cosh⁻¹">cosh</span></button>
+    <button data-fn="tanh" data-fn2="atanh"><span data-l="tanh" data-l2="tanh⁻¹">tanh</span></button>
+    <button data-fn="ln" data-fn2="exp"><span data-l="ln" data-l2="e&lt;sup&gt;x&lt;/sup&gt;">ln</span></button>
+    <button data-fn="log10" data-fn2="pow10"><span data-l="log&lt;sub&gt;10&lt;/sub&gt;" data-l2="10&lt;sup&gt;x&lt;/sup&gt;">log<sub>10</sub></span></button>
+
+    <button data-post="!">!</button>
+    <button data-fn="sqrt"><span class="rt"><i>2</i>√</span></button>
+    <button data-fn="cbrt"><span class="rt"><i>3</i>√</span></button>
+    <button data-op="yroot"><span class="rt"><i>y</i>√</span></button>
+    <button data-c="e">e</button>
+    <button data-c="pi">π</button>
+
+    <button data-s="rand">Rand</button>
+    <button data-pw="2">^2</button>
+    <button data-pw="3">^3</button>
+    <button data-op="^">^</button>
+    <button data-s="(">(</button>
+    <button data-s=")">)</button>
+  </div>
+
+  <div id="hist"></div>
+
+  <div id="dispWrap"><span id="mode"></span><div id="disp">0</div></div>
+
+  <div id="keys">
+    <button class="f" data-s="ac">AC</button>
+    <button class="f" data-s="neg">+/-</button>
+    <button class="f" data-post="%">%</button>
+    <button class="f ic" data-s="bs" aria-label="ลบ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12H3.5M10 5l-7 7 7 7"/></svg></button>
+    <button class="f ic gray on" data-s="grid" id="gridBtn" aria-label="ปุ่มวิทยาศาสตร์"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="4" cy="4" r="3.1"/><circle cx="12" cy="4" r="3.1"/><circle cx="20" cy="4" r="3.1"/><circle cx="4" cy="12" r="3.1"/><circle cx="12" cy="12" r="3.1"/><circle cx="20" cy="12" r="3.1"/><circle cx="4" cy="20" r="3.1"/><circle cx="12" cy="20" r="3.1"/><circle cx="20" cy="20" r="3.1"/></svg></button>
+
+    <button class="d" data-n="7">7</button>
+    <button class="d" data-n="8">8</button>
+    <button class="d" data-n="9">9</button>
+    <button class="o" data-op="/" aria-label="หาร"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="10.7" width="18" height="2.6" rx="1.3"/><circle cx="12" cy="5" r="2"/><circle cx="12" cy="19" r="2"/></svg></button>
+    <button class="f ic gray" data-s="trash" aria-label="ล้างประวัติ"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 1.5h6a1.5 1.5 0 0 1 1.5 1.5v1H21a1 1 0 1 1 0 2h-.6l-1 14.2A2.5 2.5 0 0 1 16.9 22.5H7.1a2.5 2.5 0 0 1-2.5-2.3L3.6 6H3a1 1 0 1 1 0-2h4.5V3A1.5 1.5 0 0 1 9 1.5zm.5 2.5h5V3.5h-5zM8 8.5l.5 11h1.6l-.5-11zm3.2 0v11h1.6v-11zm3.2 0l-.5 11h1.6l.5-11z"/></svg></button>
+
+    <button class="d" data-n="4">4</button>
+    <button class="d" data-n="5">5</button>
+    <button class="d" data-n="6">6</button>
+    <button class="o" data-op="*" aria-label="คูณ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M5 5l14 14M19 5L5 19"/></svg></button>
+    <button class="f ic gray on" data-s="list" id="listBtn" aria-label="ประวัติ"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="3.5" cy="5" r="2.3"/><circle cx="3.5" cy="12" r="2.3"/><circle cx="3.5" cy="19" r="2.3"/><rect x="8" y="2.9" width="15" height="4.2" rx="2.1"/><rect x="8" y="9.9" width="15" height="4.2" rx="2.1"/><rect x="8" y="16.9" width="15" height="4.2" rx="2.1"/></svg></button>
+
+    <button class="d" data-n="1">1</button>
+    <button class="d" data-n="2">2</button>
+    <button class="d" data-n="3">3</button>
+    <button class="o" data-op="-" aria-label="ลบ"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="10.5" width="14" height="3" rx="1"/></svg></button>
+    <button class="o" id="keq" data-s="eq" aria-label="เท่ากับ"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="6.5" width="18" height="2.8" rx="1"/><rect x="3" y="14.7" width="18" height="2.8" rx="1"/></svg></button>
+
+    <button class="d" id="k0" data-n="0">0</button>
+    <button class="d" data-n=".">.</button>
+    <button class="o" data-op="+" aria-label="บวก"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><path d="M12 4v16M4 12h16"/></svg></button>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+var $=function(id){return document.getElementById(id)};
+var disp=$('disp'),histEl=$('hist'),sci=$('sci'),wrap=$('dispWrap');
+var toks=[],done=false,second=false,rad=false,history=[];
+var KEY='calc-history-v1';
+try{history=JSON.parse(localStorage.getItem(KEY)||'[]')||[]}catch(e){history=[]}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(history.slice(-300)))}catch(e){}}
+
+var FN={sin:'sin',cos:'cos',tan:'tan',asin:'sin⁻¹',acos:'cos⁻¹',atan:'tan⁻¹',
+ sinh:'sinh',cosh:'cosh',tanh:'tanh',asinh:'sinh⁻¹',acosh:'cosh⁻¹',atanh:'tanh⁻¹',
+ ln:'ln',log10:'log₁₀',log2:'log₂',exp:'e^',pow10:'10^',pow2:'2^',sqrt:'√',cbrt:'∛'};
+var OP={'+':'+','-':'−','*':'×','/':'÷','^':'^',yroot:'ʸ√',logy:'log'};
+
+/* ---------- formatting ---------- */
+function commas(s){return s.replace(/\B(?=(\d{3})+(?!\d))/g,',')}
+function fmt(n,sig){
+  if(typeof n!=='number'||!isFinite(n))return 'Error';
+  if(n===0)return '0';
+  var a=Math.abs(n);
+  if(a>=1e16||a<1e-7){
+    var x=n.toExponential(Math.min(sig-1,8)).replace(/\.?0+e/,'e').replace('e+','e');
+    return x.replace('-','−');
+  }
+  var s=Number(n.toPrecision(sig)).toFixed(20).replace(/0+$/,'');
+  // toFixed(20) can expose float noise; rebuild from precision instead
+  var p=Number(n.toPrecision(sig));
+  var dec=Math.max(0,sig-1-Math.floor(Math.log10(Math.abs(p))));
+  s=p.toFixed(Math.min(dec,20));
+  if(s.indexOf('.')>=0)s=s.replace(/0+$/,'').replace(/\.$/,'');
+  var neg=s[0]==='-';if(neg)s=s.slice(1);
+  var parts=s.split('.');
+  return (neg?'−':'')+commas(parts[0])+(parts.length>1?'.'+parts[1]:'');
+}
+function fmtTyped(v){
+  if(/e/i.test(v))return fmt(parseFloat(v),10);
+  var neg=v[0]==='-';if(neg)v=v.slice(1);
+  var i=v.indexOf('.');
+  var ip=i<0?v:v.slice(0,i),dp=i<0?'':v.slice(i);
+  return (neg?'−':'')+commas(ip||'0')+dp;
+}
+function exprStr(t){
+  var s='';
+  for(var i=0;i<t.length;i++){var k=t[i];
+    if(k.t==='num')s+=fmtTyped(k.v);
+    else if(k.t==='op')s+=OP[k.v];
+    else if(k.t==='fn')s+=FN[k.v]+'(';
+    else if(k.t==='lp')s+='(';
+    else if(k.t==='rp')s+=')';
+    else if(k.t==='post')s+=k.v;
+    else if(k.t==='const')s+=(k.v==='pi'?'π':'e');
+  }
+  return s;
+}
+
+/* ---------- evaluation ---------- */
+function fact(n){
+  if(n<0||n!==Math.floor(n)||n>170)return NaN;
+  var r=1;for(var i=2;i<=n;i++)r*=i;return r;
+}
+function snap(v){return Math.abs(v)<1e-15?0:(Math.abs(v)>1e15?Infinity:v)}
+function applyFn(f,x){
+  var d=rad?1:Math.PI/180;
+  switch(f){
+    case 'sin':return snap(Math.sin(x*d));
+    case 'cos':return snap(Math.cos(x*d));
+    case 'tan':return snap(Math.tan(x*d));
+    case 'asin':return Math.asin(x)/d;
+    case 'acos':return Math.acos(x)/d;
+    case 'atan':return Math.atan(x)/d;
+    case 'sinh':return Math.sinh(x);case 'cosh':return Math.cosh(x);case 'tanh':return Math.tanh(x);
+    case 'asinh':return Math.asinh(x);case 'acosh':return Math.acosh(x);case 'atanh':return Math.atanh(x);
+    case 'ln':return Math.log(x);case 'log10':return Math.log10(x);case 'log2':return Math.log2(x);
+    case 'exp':return Math.exp(x);case 'pow10':return Math.pow(10,x);case 'pow2':return Math.pow(2,x);
+    case 'sqrt':return Math.sqrt(x);case 'cbrt':return Math.cbrt(x);
+  }
+  return NaN;
+}
+function evaluate(t){
+  var p=0;
+  function peek(){return t[p]}
+  function isOp(v){var k=t[p];return k&&k.t==='op'&&k.v===v}
+  function startsPrimary(){var k=t[p];return k&&(k.t==='num'||k.t==='fn'||k.t==='lp'||k.t==='const')}
+  function expr(){
+    var v=term();
+    while(isOp('+')||isOp('-')){var o=t[p++].v;var r=term();v=o==='+'?v+r:v-r}
+    return v;
+  }
+  function term(){
+    var v=unary();
+    for(;;){
+      if(isOp('*')){p++;v*=unary()}
+      else if(isOp('/')){p++;v/=unary()}
+      else if(startsPrimary()){v*=unary()}
+      else break;
+    }
+    return v;
+  }
+  function unary(){
+    if(isOp('-')){p++;return -unary()}
+    if(isOp('+')){p++;return unary()}
+    return power();
+  }
+  function power(){
+    var b=postfix();
+    if(isOp('^')){p++;return Math.pow(b,unary())}
+    if(isOp('yroot')){p++;var y=unary();
+      if(b<0&&Math.abs(y%2)===1)return -Math.pow(-b,1/y);
+      return Math.pow(b,1/y)}
+    if(isOp('logy')){p++;return Math.log(b)/Math.log(unary())}
+    return b;
+  }
+  function postfix(){
+    var v=primary();
+    while(peek()&&peek().t==='post'){var o=t[p++].v;v=o==='!'?fact(v):v/100}
+    return v;
+  }
+  function primary(){
+    var k=t[p];
+    if(!k)throw 0;
+    if(k.t==='num'){p++;var n=parseFloat(k.v);if(isNaN(n))throw 0;return n}
+    if(k.t==='const'){p++;return k.v==='pi'?Math.PI:Math.E}
+    if(k.t==='fn'){p++;var a=expr();if(peek()&&peek().t==='rp')p++;return applyFn(k.v,a)}
+    if(k.t==='lp'){p++;var e=expr();if(peek()&&peek().t==='rp')p++;return e}
+    throw 0;
+  }
+  var v=expr();
+  if(p<t.length)throw 0;
+  // tidy floating-point noise (0.1+0.2)
+  return Number(v.toPrecision(14));
+}
+
+/* ---------- input ---------- */
+function last(){return toks[toks.length-1]}
+function isValueEnd(k){return k&&(k.t==='num'||k.t==='rp'||k.t==='post'||k.t==='const')}
+function fresh(keepResult){
+  if(done){ if(!keepResult||(last()&&last().v==='Error'))toks=[]; done=false; }
+}
+function num(c){
+  fresh(false);
+  var k=last();
+  if(k&&k.t==='num'){
+    if(c==='.'&&k.v.indexOf('.')>=0)return;
+    if(k.v.replace(/[-.]/g,'').length>=15)return;
+    if(k.v==='0'&&c!=='.')k.v=c; else if(k.v==='-0'&&c!=='.')k.v='-'+c; else k.v+=c;
+  }else toks.push({t:'num',v:c==='.'?'0.':c});
+}
+function op(o){
+  fresh(true);
+  var k=last();
+  if(!k){ if(o==='-')toks.push({t:'op',v:'-'}); else {toks.push({t:'num',v:'0'});toks.push({t:'op',v:o})} return; }
+  if(k.t==='op'){
+    if(o==='-'&&(k.v==='*'||k.v==='/'||k.v==='^')){toks.push({t:'op',v:'-'});return}
+    var prev=toks[toks.length-2];
+    if(prev&&prev.t==='op'){toks.pop()}
+    if(toks.length===1&&o!=='-'){return}
+    toks[toks.length-1]={t:'op',v:o};return;
+  }
+  if(k.t==='fn'||k.t==='lp'){ if(o==='-')toks.push({t:'op',v:'-'}); return; }
+  toks.push({t:'op',v:o});
+}
+function backspace(){
+  if(done){toks=[];done=false;return}
+  var k=last();if(!k)return;
+  if(k.t==='num'&&k.v.replace('-','').length>1&&!/e/i.test(k.v)){k.v=k.v.slice(0,-1);if(k.v==='-')toks.pop()}
+  else toks.pop();
+}
+function negate(){
+  var k=last();
+  if(k&&k.t==='num'){k.v=k.v[0]==='-'?k.v.slice(1):'-'+k.v;done=false}
+  else if(!k||!isValueEnd(k)){fresh(false);toks.push({t:'num',v:'-0'})}
+}
+function depth(){var d=0;toks.forEach(function(k){if(k.t==='fn'||k.t==='lp')d++;else if(k.t==='rp')d--});return d}
+function equals(){
+  if(!toks.length||done)return;
+  var t=toks.slice();
+  while(t.length&&(t[t.length-1].t==='op'||t[t.length-1].t==='lp'||t[t.length-1].t==='fn'))t.pop();
+  if(!t.length)return;
+  var e=t.slice(),d=0;
+  e.forEach(function(k){if(k.t==='fn'||k.t==='lp')d++;else if(k.t==='rp')d--});
+  while(d-->0)e.push({t:'rp'});
+  var r;try{r=evaluate(e)}catch(x){r=NaN}
+  var ok=typeof r==='number'&&isFinite(r);
+  if(ok&&!(e.length===1&&e[0].t==='num')){
+    history.push({d:today(),e:exprStr(e),r:fmt(r,6)});save();renderHist();
+  }
+  toks=[{t:'num',v:ok?String(r):'Error'}];done=true;
+}
+function today(){var n=new Date();return n.getFullYear()+'-'+(n.getMonth()+1)+'-'+n.getDate()}
+var MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function dayLabel(s){var p=s.split('-');return ('0'+p[2]).slice(-2)+' '+MON[p[1]-1]}
+
+/* ---------- render ---------- */
+function render(){
+  var s=toks.length?exprStr(toks):'0';
+  if(done&&toks[0])s=toks[0].v==='Error'?'Error':fmt(parseFloat(toks[0].v),10);
+  disp.textContent=s;
+  var max=Math.min(96,wrap.clientWidth*0.235),size=max;
+  disp.style.fontSize=size+'px';
+  var avail=wrap.clientWidth-16;
+  if(disp.scrollWidth>avail){size=Math.max(22,size*avail/disp.scrollWidth);disp.style.fontSize=size+'px'}
+  $('mode').textContent=rad?'Rad':'';
+}
+function renderHist(){
+  var h='<div class="sp"></div>',d=null;
+  history.forEach(function(it,i){
+    if(it.d!==d){d=it.d;h+='<div class="day">'+dayLabel(d)+'</div>'}
+    h+='<div class="ln" data-i="'+i+'"><span>'+esc(it.e)+'=<b>'+esc(it.r)+'</b></span></div>';
+  });
+  histEl.innerHTML=h;histEl.scrollTop=histEl.scrollHeight;
+}
+function esc(s){return String(s).replace(/[&<>]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;'}[c]})}
+function setSecond(v){
+  second=v;
+  sci.querySelector('[data-s="2nd"]').classList.toggle('on',v);
+  sci.querySelectorAll('[data-l]').forEach(function(el){el.innerHTML=el.getAttribute(v?'data-l2':'data-l')});
+}
+
+/* ---------- events ---------- */
+function press(b){
+  var ds=b.dataset;
+  if(ds.n!==undefined)num(ds.n);
+  else if(ds.op)op(ds.op);
+  else if(ds.fn){fresh(false);toks.push({t:'fn',v:(second&&ds.fn2)?ds.fn2:ds.fn});if(second)setSecond(false)}
+  else if(ds.post){fresh(true);if(isValueEnd(last()))toks.push({t:'post',v:ds.post})}
+  else if(ds.pw){fresh(true);if(isValueEnd(last())){toks.push({t:'op',v:'^'});toks.push({t:'num',v:ds.pw})}}
+  else if(ds.c){fresh(false);toks.push({t:'const',v:ds.c})}
+  else switch(ds.s){
+    case 'ac':toks=[];done=false;break;
+    case 'bs':backspace();break;
+    case 'neg':negate();break;
+    case 'eq':equals();break;
+    case '(':fresh(false);toks.push({t:'lp'});break;
+    case ')':if(!done&&depth()>0&&isValueEnd(last()))toks.push({t:'rp'});break;
+    case 'rand':fresh(false);if(last()&&last().t==='num')toks.pop();
+      toks.push({t:'num',v:String(Number(Math.random().toFixed(8)))});break;
+    case '2nd':setSecond(!second);break;
+    case 'rad':rad=!rad;$('radBtn').textContent=rad?'Deg':'Rad';break;
+    case 'grid':sci.classList.toggle('hide');$('gridBtn').classList.toggle('on',!sci.classList.contains('hide'));
+      histEl.scrollTop=histEl.scrollHeight;break;
+    case 'list':histEl.classList.toggle('hide');$('listBtn').classList.toggle('on',!histEl.classList.contains('hide'));break;
+    case 'trash':history=[];save();renderHist();break;
+  }
+  render();
+}
+document.addEventListener('click',function(e){
+  var b=e.target.closest('button');
+  if(b){press(b);return}
+  var ln=e.target.closest('.ln');
+  if(ln){var it=history[+ln.dataset.i];if(!it)return;
+    var v=it.r.replace(/,/g,'').replace('−','-');
+    if(isNaN(parseFloat(v)))return;
+    if(done||!toks.length){toks=[{t:'num',v:v}];done=false}
+    else if(!isValueEnd(last()))toks.push({t:'num',v:v});
+    render();
+  }
+});
+document.addEventListener('keydown',function(e){
+  if(e.metaKey||e.ctrlKey||e.altKey)return;
+  var k=e.key,sel=null;
+  if(/^[0-9.]$/.test(k))sel='[data-n="'+k+'"]';
+  else if(k==='+'||k==='-'||k==='*'||k==='/'||k==='^')sel='#app [data-op="'+k+'"]';
+  else if(k==='Enter'||k==='=')sel='[data-s="eq"]';
+  else if(k==='Backspace')sel='[data-s="bs"]';
+  else if(k==='Escape'||k==='Delete')sel='[data-s="ac"]';
+  else if(k==='%')sel='[data-post="%"]';
+  else if(k==='!')sel='[data-post="!"]';
+  else if(k==='(')sel='[data-s="("]';
+  else if(k===')')sel='[data-s=")"]';
+  if(sel){e.preventDefault();var b=document.querySelector(sel);if(b)press(b)}
+});
+window.addEventListener('resize',render);
+renderHist();render();
+})();
+</script>
+</body>
+</html>
