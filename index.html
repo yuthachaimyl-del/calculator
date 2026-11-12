@@ -430,6 +430,13 @@ document.addEventListener('keydown',function(e){
   document.addEventListener('pointerdown',function(e){var b=e.target.closest('#keys button,#sci button');if(!b)return;up();cur=b;t0=Date.now();b.classList.add('pr')},{passive:true});
   ['pointerup','pointercancel','pointerleave'].forEach(function(n){document.addEventListener(n,up,{passive:true})});
 })();
+
+/* auto-update: GitHub Pages caches 10 min; jump to a fresh URL when a newer version exists */
+var VER='6';
+try{fetch('version.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():''}).then(function(v){
+  v=(v||'').trim();
+  if(v&&v!==VER&&location.search!=='?v='+v)location.replace(location.pathname+'?v='+v);
+}).catch(function(){})}catch(e){}
 window.addEventListener('resize',render);
 renderHist();render();
 })();
