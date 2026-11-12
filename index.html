@@ -69,6 +69,7 @@ button{font:inherit;color:inherit;border:0;cursor:pointer;outline:0}
 </style>
 </head>
 <body>
+<label id="hapL" for="hapI" style="position:absolute;width:0;height:0;overflow:hidden;opacity:0;pointer-events:none" aria-hidden="true"><input type="checkbox" switch id="hapI" tabindex="-1"></label>
 <div id="app">
   <div id="sci">
     <button data-s="2nd">2<sup>nd</sup></button>
@@ -355,6 +356,8 @@ function setSecond(v){
 }
 
 /* ---------- events ---------- */
+var hapL=$('hapL');
+function haptic(){try{if(navigator.vibrate){navigator.vibrate(8);return}hapL.click()}catch(e){}}
 function press(b){
   var ds=b.dataset;
   if(ds.n!==undefined)num(ds.n);
@@ -382,8 +385,9 @@ function press(b){
   render();
 }
 document.addEventListener('click',function(e){
+  if(e.target.closest('#hapL'))return;
   var b=e.target.closest('button');
-  if(b){press(b);return}
+  if(b){haptic();press(b);return}
   var ln=e.target.closest('.ln');
   if(ln){var it=history[+ln.dataset.i];if(!it)return;
     var v=it.r.replace(/,/g,'').replace('−','-');
